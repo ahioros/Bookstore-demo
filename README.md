@@ -6,9 +6,57 @@ You can use this example as a simple application to be used in the technical tes
 
 ```bash
 git clone git@github.com:ahioros/Bookstore-demo.git
-cd Book-Store
-chmod +x run.sh
-./run.sh
+cd Bookstore-demo
+python -m venv venv
+```
+
+```bash
+source venv/bin/activate
+export DATABASE=mydatabase.db
+export SECRET_TOKE="SUPER_SECRETPASSW0RD"
+pip install -r requirements.txt
+python app.py
+```
+
+Open http://localhost:8000 in your browser:
+
+http://localhost:8000/secret
+
+http://localhost:8000/books/
+
+## Extra info
+
+Insert a new book
+
+```bash
+curl -X POST http://localhost:8000/books/ -H "Content-Type: application/json" -d '{
+"title": "New book title",
+"author": "Author of the book",
+"topic": "Topic of the book"
+}'
+```
+
+Update book info
+
+```bash
+curl -X PUT http://localhost:8000/books/1 -H "Content-Type: application/json" -d '{
+"title": "Title update",
+"author": "Author update",
+"topic": "Topic Update",
+"id": "1"
+}'
+```
+
+Delete book
+
+```bash
+curl -X DELETE http://localhost:8000/books/1 -H "Content-Type: application/json" -d '{}' "
+```
+
+## TEST
+
+```bash
+pytest -v
 ```
 
 ## Tasks
@@ -59,4 +107,9 @@ chmod +x run.sh
 
 Extra points:
 
+- Create a Docker Compose file
 - If you use IaC tools, add the apply/outputs, CloudFormation (events/resources), etc.
+
+## License
+
+GPL

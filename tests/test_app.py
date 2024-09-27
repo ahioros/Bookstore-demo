@@ -1,64 +1,51 @@
-import sys
 import os
-import sqlite3
 
-# add the root dir of the project
-root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, root_path)  # noqa E402
-from app import Book, read_book  # noqa  E402
+from app import app
+from crud.book import create_table, creation_book
+from fastapi.testclient import TestClient
+from models.book import BookCreate
 
-# add the root dir of the project
-# root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# sys.path.insert(0, root_path)
-# from app import Book, read_book
+client = TestClient(app)
+
+os.environ["DATABASE"] = "TEST_DATABASE.db"
+os.environ["SECRET_TOKEN"] = "SUPER_SECRETPASSW0RD"
 
 
-def test_read_book():
-    # Create conecction to db in memory
-    conn = sqlite3.connect(":memory:")
-    cursor = conn.cursor()
+def __delete_database():
+    if os.path.exists(os.environ["DATABASE"]):
+        os.remove(os.environ["DATABASE"])
 
-    # Create the table and insert the books
-    cursor.execute(
-        "CREATE TABLE books (id INTEGER PRIMARY KEY, title TEXT, author TEXT, topic TEXT)"
+
+def test_secret():
+    response = client.get("/secret")
+    assert response.status_code == 200
+    assert response.json() == {
+        "SECRET_TOKEN_ENCODE": "U1VQRVJfU0VDUkVUUEFTU1cwUkQ=",
+        "SECRET_TOKEN_DECODE": "SUPER_SECRETPASSW0RD",
+    }
+
+
+def test_read_root():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json() == {"message": "Welcome to the CRUD API example!"}
+
+
+def test_get_books():
+    create_table()
+    creation_book(
+        BookCreate(title="Cien años de soledad", author="Gabriel Garcia M", topic="Fantasia")
     )
-    cursor.execute(
-        "INSERT INTO books (title, author, topic) VALUES ('Cien años de soledad', 'Gabriel Garcia M', 'Fantasía')"
-    )
-    cursor.execute(
-        "INSERT INTO books (title, author, topic) VALUES ('El coronel no tiene quien le escriba', 'Gabriel Garcia M', 'Fantasía')"
-    )
-    cursor.execute(
-        "INSERT INTO books (title, author, topic) VALUES ('IT', 'Stephen King', 'Terror')"
-    )
-    cursor.execute(
-        "INSERT INTO books (title, author, topic) VALUES ('The Mist', 'Stephen King', 'Terror')"
-    )
 
-    conn.commit()
-
-    # execute the function to test
-    result = read_book()
-
-    # the expected result
-    expected_result = [
-        Book(
-            id=1,
-            title="Cien años de soledad",
-            author="Gabriel Garcia M",
-            topic="Fantasía",
-        ),
-        Book(
-            id=2,
-            title="El coronel no tiene quien le escriba",
-            author="Gabriel Garcia M",
-            topic="Fantasía",
-        ),
-        Book(id=3, title="IT", author="Stephen King", topic="Terror"),
-        Book(id=4, title="The Mist", author="Stepehen King", topic="Terror"),
+    response = client.get("/books")
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "id": 1,
+            "title": "Cien años de soledad",
+            "author": "Gabriel Garcia M",
+            "topic": "Fantasia",
+        }
     ]
-    assert result == expected_result
 
-    # close conecction to the db
-    cursor.close()
-    conn.close()
+    __delete_database()
